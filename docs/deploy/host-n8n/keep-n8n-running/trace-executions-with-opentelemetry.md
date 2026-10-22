@@ -397,17 +397,13 @@ A project attribute `team` now arrives as `team`, not `n8n.project.custom.team`.
 
 - Each value replaces the prefix, for example `"acme."`. An empty string removes it. A level you leave out keeps its default.
 - If the value isn't a JSON object with string values for `project`, `workflow`, or `node`, n8n logs a warning and uses the defaults.
+- If two levels use the same key, the more specific level wins. If a key matches a built-in n8n attribute, such as `n8n.execution.id`, n8n keeps the built-in value.
 - Set the same value on the main instance, workers, and webhook processors.
 
 {% hint style="warning" %}
-**Overlapping keys**
+**OpenTelemetry standard attributes**
 
-When you change or remove a prefix, custom keys can clash with other keys:
-
-- n8n drops a key that matches a built-in attribute, such as `n8n.execution.id`, and keeps the built-in value.
-- If two levels use the same key, the more specific level wins: workflow over project, and node over project.
-- n8n doesn't protect OpenTelemetry standard keys, such as `service.name` or `http.request.method`. Your backend reads them as the standard attribute, so use them only for values with that meaning.
-- Changing a prefix renames your keys. Update dashboards and alerts that use the old keys.
+n8n doesn't check custom keys against the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/). If your key matches a standard attribute, such as `service.name` or `http.request.method`, your backend reads your value as that attribute. Avoid standard keys unless your value has the standard meaning.
 {% endhint %}
 
 ## Try it out with Jaeger <a href="#try-it-out-with-jaeger" id="try-it-out-with-jaeger"></a>
