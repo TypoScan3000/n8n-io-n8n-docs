@@ -395,14 +395,14 @@ export N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES='{"project":"","node":""}'
 
 A project attribute `gen_ai.system` now arrives as `gen_ai.system`, not `n8n.project.custom.gen_ai.system`.
 
-- An empty string removes the prefix. A level you leave out keeps its default.
-- If the value isn't valid, n8n logs a warning and uses the defaults.
+- Each value replaces the prefix, for example `"acme."`. An empty string removes it. A level you leave out keeps its default.
+- If the value isn't a JSON object with string values for `project`, `workflow`, or `node`, n8n logs a warning and uses the defaults.
 - Set the same value on the main instance, workers, and webhook processors.
 
 {% hint style="warning" %}
 **Overlapping keys**
 
-Without a prefix, custom keys can clash with other keys:
+When you change or remove a prefix, custom keys can clash with other keys:
 
 - n8n drops a key that matches a built-in attribute, such as `n8n.execution.id`, and keeps the built-in value.
 - If two levels use the same key, the more specific level wins: workflow over project, and node over project.
