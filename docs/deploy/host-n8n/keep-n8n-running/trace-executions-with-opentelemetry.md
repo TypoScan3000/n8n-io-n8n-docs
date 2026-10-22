@@ -372,7 +372,7 @@ async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 }
 ```
 
-By default, n8n prefixes each key with `n8n.node.custom.` on the exported span. To change the prefix, refer to [Change the attribute prefixes](#change-the-attribute-prefixes). Values must be strings, numbers, or boolean.
+By default, n8n prefixes each key with `n8n.node.custom.`. You can [change the attribute prefixes](#change-the-attribute-prefixes). Values must be strings, numbers, or boolean.
 
 This API isn't available from the Code node. It's intended for node authors who want to enrich spans with domain-specific data.
 
@@ -386,39 +386,28 @@ If a node sets an attribute key here that's also configured as a [custom node sp
 Custom attribute prefixes are available from n8n 2.46.0.
 {% endhint %}
 
-By default, n8n adds a prefix to each custom span attribute key, for example `n8n.project.custom.gen_ai.system`. Some observability backends expect exact keys, such as the OpenTelemetry GenAI keys. To change or remove the prefix, set `N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES` to a JSON object with a `project`, `workflow`, or `node` key:
+Some backends expect exact keys, such as `gen_ai.system`. To change or remove the prefix for a level, set `N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES`:
 
 ```bash
-# Send project and node attributes without a prefix.
-# Workflow attributes keep the default prefix n8n.workflow.custom.
+# No prefix for project and node attributes. Workflow attributes keep the default.
 export N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES='{"project":"","node":""}'
 ```
 
-With this value, a project attribute `gen_ai.system` with the value `openai` arrives as `gen_ai.system=openai`, not `n8n.project.custom.gen_ai.system=openai`.
+A project attribute `gen_ai.system` now arrives as `gen_ai.system`, not `n8n.project.custom.gen_ai.system`.
 
-| Level | Default prefix | Example custom prefix | Exported key for `team` |
-| :---- | :------------- | :-------------------- | :---------------------- |
-| `project` | `n8n.project.custom.` | `""` | `team` |
-| `workflow` | `n8n.workflow.custom.` | `"acme.workflow."` | `acme.workflow.team` |
-| `node` | `n8n.node.custom.` | Left out | `n8n.node.custom.team` |
-
-The prefixes follow these rules:
-
-- An empty string removes the prefix for that level.
-- A level you leave out keeps its default prefix.
-- If the value isn't valid JSON, has a key other than `project`, `workflow`, or `node`, or has a value that isn't a string, n8n logs a warning and uses the default prefixes.
-- The node prefix also applies to attributes that custom nodes set with `setMetadata`.
-- In queue mode, set the same value on the main instance, on every worker, and on every webhook processor.
+- An empty string removes the prefix. A level you leave out keeps its default.
+- If the value isn't valid, n8n logs a warning and uses the defaults.
+- Set the same value on the main instance, workers, and webhook processors.
 
 {% hint style="warning" %}
 **Overlapping keys**
 
-When you shorten or remove a prefix, custom keys can overlap with other keys:
+Without a prefix, custom keys can clash with other keys:
 
-- **Built-in n8n attributes:** if a custom key matches a built-in [span attribute](#span-attributes) after n8n adds the prefix, for example `n8n.execution.id`, n8n drops the custom attribute and keeps the built-in value.
-- **Keys from two levels:** if two levels send the same key, the more specific level wins. On workflow spans, workflow attributes win over project attributes. On node spans, node attributes win over project attributes.
-- **OpenTelemetry standard keys:** n8n doesn't protect keys that the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) define, such as `service.name`, `http.request.method`, or `gen_ai.provider.name`. n8n sends them as you set them, and your backend reads them as the standard attribute. A span attribute named `service.name` doesn't change the `service.name` resource attribute, which `N8N_OTEL_EXPORTER_SERVICE_NAME` sets. Use a standard key only for a value with the standard meaning.
-- **Existing queries:** changing a prefix changes the exported keys. Dashboards, alerts, and saved queries that use the old keys stop matching.
+- n8n drops a key that matches a built-in attribute, such as `n8n.execution.id`, and keeps the built-in value.
+- If two levels use the same key, the more specific level wins: workflow over project, and node over project.
+- n8n doesn't protect OpenTelemetry standard keys, such as `service.name` or `gen_ai.provider.name`. Your backend reads them as the standard attribute, so use them only for values with that meaning.
+- Changing a prefix renames your keys. Update dashboards and alerts that use the old keys.
 {% endhint %}
 
 ## Try it out with Jaeger <a href="#try-it-out-with-jaeger" id="try-it-out-with-jaeger"></a>
@@ -556,7 +545,7 @@ Check that:
 - You have an Enterprise license.
 - You set `N8N_OTEL_ENABLED` to `true`.
 - For node-level span attributes, `N8N_OTEL_TRACES_INCLUDE_NODE_SPANS` isn't set to `false`.
-- If you set `N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES`, look for the attribute under its new key. n8n drops a custom attribute whose key matches a built-in attribute. Refer to [Change the attribute prefixes](#change-the-attribute-prefixes).
+- If you set `N8N_OTEL_TRACES_CUSTOM_ATTRIBUTE_PREFIXES`, search for the new key. n8n drops keys that match built-in attributes. Refer to [Change the attribute prefixes](#change-the-attribute-prefixes).
 
 ### A crashed execution has no span
 
